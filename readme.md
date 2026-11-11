@@ -3,6 +3,88 @@ Laravel Translation Manager
 
 Easy management of translations in Laravel.
 
+About this fork
+---------------
+
+This repository is a fork of [highsolutions/laravel-translation-manager](https://github.com/highsolutions/laravel-translation-manager), started from its v1.5.0. We change it for our own use. The original package is never changed from here, and we don't open pull requests against it.
+
+The sections below "Working on this fork" are the original package's documentation.
+
+Working on this fork
+--------------------
+
+### Which code is whose
+
+| Name | What it is |
+|------|------------|
+| `master` (`origin/master`) | Our version. The default branch. |
+| `upstream/master` | The original package. Read-only. |
+
+### Set up your clone
+
+```bash
+git clone git@github.com:therealtutorised/laravel-translation-manager.git
+cd laravel-translation-manager
+git remote add upstream https://github.com/highsolutions/laravel-translation-manager.git
+git remote set-url --push upstream DISABLED
+gh repo set-default therealtutorised/laravel-translation-manager
+```
+
+- `set-url --push upstream DISABLED` makes a push to the original impossible.
+- `gh repo set-default` makes `gh pr create` open pull requests in this repository.
+
+### Make a change
+
+```bash
+git switch master
+git pull origin master
+git switch -c feature/my-change
+# work, commit
+git switch master
+git merge feature/my-change
+git push origin master
+```
+
+Small changes can be committed on `master` directly. A pull request is optional: open one when you want a review.
+
+### If you open a pull request, check its target
+
+Because this is a fork, GitHub's website starts every new pull request with the original repository as the base. Before you click "Create pull request", set:
+
+- **base repository:** `therealtutorised/laravel-translation-manager`
+- **base:** `master`
+
+`gh pr create` picks the right repository once `gh repo set-default` has been run.
+
+### See what we changed
+
+```bash
+git fetch upstream
+git diff upstream/master...master
+```
+
+### Take changes from the original
+
+```bash
+git fetch upstream
+git switch -c chore/merge-upstream master
+git merge upstream/master
+# fix conflicts, run the tests
+git switch master
+git merge chore/merge-upstream
+git push origin master
+```
+
+Don't use GitHub's "Sync fork" button: it merges on GitHub, where conflicts can't be fixed and tests can't be run first.
+
+### This repository is public
+
+Anyone can read the code, commits and pull requests, and they stay readable after deletion. Never push secrets, API keys, real user data, texts copied from our applications, or internal host names. Settings belong in the `.env` and config of the application that installs the package.
+
+### Licence
+
+MIT, as in the original. Keep `LICENSE` and its copyright lines.
+
 ![Laravel-Translation-Manager by HighSolutions](https://raw.githubusercontent.com/highsolutions/laravel-translation-manager/master/intro.jpg)
 
 Installation
