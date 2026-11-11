@@ -3,12 +3,9 @@
 namespace HighSolutions\TranslationManager;
 
 use HighSolutions\TranslationManager\Console\CleanCommand;
-use HighSolutions\TranslationManager\Console\CloneCommand;
 use HighSolutions\TranslationManager\Console\ExportCommand;
-use HighSolutions\TranslationManager\Console\FindCommand;
 use HighSolutions\TranslationManager\Console\ImportCommand;
 use HighSolutions\TranslationManager\Console\ResetCommand;
-use HighSolutions\TranslationManager\Console\SuffixCommand;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
@@ -55,11 +52,8 @@ class ManagerServiceProvider extends ServiceProvider {
         return [
             'reset' => ResetCommand::class,
             'import' => ImportCommand::class,
-            'find' => FindCommand::class,
             'export' => ExportCommand::class,
             'clean' => CleanCommand::class,
-            'clone' => CloneCommand::class,
-            'suffix' => SuffixCommand::class,
         ];
     }
 
@@ -131,10 +125,6 @@ class ManagerServiceProvider extends ServiceProvider {
             $router->post('/delete/{key}/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postDelete')->name('translation-manager.delete');
             $router->post('/publish/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postPublish')->name('translation-manager.publish');
             $router->post('/import', 'Controller@postImport')->name('translation-manager.import');
-            $router->post('/clean', 'Controller@postClean')->name('translation-manager.clean');
-            $router->post('/find', 'Controller@postFind')->name('translation-manager.find');
-
-            $router->post('custom-update', 'Controller@postEditAndExport')->name('translation-manager.update');
         });
     }
 
@@ -153,11 +143,8 @@ class ManagerServiceProvider extends ServiceProvider {
             'translation-manager',
             'command.translation-manager.reset',
             'command.translation-manager.import',
-            'command.translation-manager.find',
             'command.translation-manager.export',
             'command.translation-manager.clean',
-            'command.translation-manager.clone',
-            'command.translation-manager.suffix',
         ];
 	}
 

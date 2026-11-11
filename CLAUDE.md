@@ -30,7 +30,8 @@ of highsolutions/laravel-translation-manager. See readme.md, "Working on this fo
 
 ## Tests
 
-- None yet. When the test setup exists, put the command here.
+- Run: `vendor/bin/phpunit` (Orchestra Testbench, MySQL database
+  `translation_manager_test`; see readme.md, "Run the tests").
 - Every new behaviour gets a test, few and focused, on the critical logic only.
 - Each test has a docblock: what it checks, where, why it matters.
 - Run the suite before starting and after finishing a change.

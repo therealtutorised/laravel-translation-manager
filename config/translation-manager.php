@@ -56,30 +56,10 @@ return array(
         // ...
     ),
 
-    /**
-     * Basic language used by translator.
-     */
-    'basic_lang' => 'en',
-
 	/**
 	 * Export translations with keys output alphabetically.
 	 */
 	'sort_keys ' => false,
-
-	/**
-	 * Highlight lines with locale marked (e.g. EN at the end of text)
-	 */
-	'highlight_locale_marked' => false,
-
-	/**
-	 * Enable live translation of content.
-	 */
-	'live_translation_enabled' => false,
-
-	/**
-	 * Position of live translation popup.
-	 */
-	'popup_placement' => 'top',
 
 	/**
 	 * Define who and when can manage module.

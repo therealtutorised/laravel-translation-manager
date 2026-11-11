@@ -5,9 +5,6 @@ namespace HighSolutions\TranslationManager;
 use HighSolutions\TranslationManager\Models\Translation;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Symfony\Component\Finder\Finder;
 use Illuminate\Support\Arr;
 
 class Manager
@@ -96,51 +93,6 @@ class Manager
         return $counter;
     }
 
-    public function findTranslations($path = null)
-    {
-        $path = $path ?: base_path();
-        $keys = array();
-        $functions =  array('trans', 'trans_choice', 'Lang::get', 'Lang::choice', 'Lang::trans', 'Lang::transChoice', '@lang', '@choice', 'transEditable');
-        $pattern =                              // See http://regexr.com/392hu
-            "[^\w|>]".                          // Must not have an alphanum or _ or > before real method
-            "(".implode('|', $functions) .")".  // Must start with one of the functions
-            "\(".                               // Match opening parenthese
-            "[\'\"]".                           // Match " or '
-            "(".                                // Start a new group to match:
-                "[a-zA-Z0-9_-]+".               // Must start with group
-                "([.][^\1)]+)+".                // Be followed by one or more items/keys
-            ")".                                // Close group
-            "[\'\"]".                           // Closing quote
-            "[\),]";                            // Close parentheses or new parameter
-
-        // Find all PHP + Twig files in the app folder, except for storage
-        $finder = new Finder();
-        $finder->in($path)->exclude('storage')->name('*.php')->name('*.twig')->files();
-
-        /** @var \Symfony\Component\Finder\SplFileInfo $file */
-        foreach ($finder as $file) {
-            // Search the current file for the pattern
-            if(preg_match_all("/$pattern/siU", $file->getContents(), $matches)) {
-                // Get all matches
-                foreach ($matches[2] as $key) {
-                    $keys[] = $key;
-                }
-            }
-        }
-        // Remove duplicates
-        $keys = array_unique($keys);
-
-        // Add the translations to the database, if not existing.
-        foreach($keys as $key) {
-            // Split the group and item
-            list($group, $item) = explode('.', $key, 2);
-            $this->missingKey('', $group, $item);
-        }
-
-        // Return the number of found translations
-        return count($keys);
-    }
-
     public function exportTranslations($group)
     {
         if(in_array($group, $this->config['exclude_groups']))
@@ -221,45 +173,6 @@ class Manager
         
         $locales = array_merge([config('app.locale')], $locales);
         return array_unique($locales);
-    }
-
-    public function cloneTranslations($from, $to)
-    {
-        $fromDir = $this->app['path.lang'] . DIRECTORY_SEPARATOR . $from;
-        $toDir = $this->app['path.lang'] . DIRECTORY_SEPARATOR . $to;
-
-        if(File::isDirectory($fromDir))
-            File::copyDirectory($fromDir, $toDir);
-    }
-
-    public function suffixTranslations($original, $locale)
-    {
-        $langOriginal = Translation::where('locale', $original)
-            ->whereNotNull('value')
-            ->where('status', '=', Translation::STATUS_SAVED)
-            ->get();
-
-        $langLocale = Translation::where('locale', $locale)
-            ->whereNotNull('value')
-            ->where('status', '=', Translation::STATUS_SAVED)
-            ->get();
-
-        $suffix = strtoupper($locale);
-
-        return $langLocale->filter(function ($lang) use ($langOriginal) {
-            $toCompare = $langOriginal->where('group', $lang->group)
-                ->where('key', $lang->key)
-                ->first();
-            
-            return $toCompare != null && $toCompare->value == $lang->value;
-        })->each(function ($lang) use ($suffix) {
-            if(substr($lang->value, -2) == $suffix)
-                return;
-            
-            $lang->update([
-                'value' => $lang->value . ' '. $suffix,
-            ]);
-        })->count();
     }
 
 }

@@ -39,18 +39,8 @@ class Controller extends BaseController
             'highlighted' => $this->service->getHighlighted(),
             'canManage' => $this->service->canManage(),
             'group' => $group,
-            'currentLocale' => config('app.locale'),
             'deleteEnabled' => $this->service->getConfig('delete_enabled'),
         ]);
-    }
-
-    public function postEditAndExport(Request $request)
-    {
-       $this->service->update($request->input('name'), $request->input('value'));
-
-        return [
-            'success' => true,
-        ];
     }
 
     public function postAdd(Request $request)
@@ -100,27 +90,6 @@ class Controller extends BaseController
     public function postImport(Request $request)
     {
         $this->service->import($request->input('replace'));
-
-        return [
-            'success' => true,
-        ];
-    }
-
-    public function postFind()
-    {
-        $this->service->find();
-
-        return [
-            'success' => true,
-        ];
-    }
-
-    public function postClean(Request $request)
-    {
-        if($request->input('reset') == false)
-            $this->service->cleanEmpty();
-        else            
-            $this->service->removeAll();
 
         return [
             'success' => true,

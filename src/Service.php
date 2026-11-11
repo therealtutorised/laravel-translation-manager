@@ -65,8 +65,6 @@ class Service
 
     public function getHighlighted() 
     {
-        $locale = config('app.locale');
-
         $notPublished = Translation::where('status', Translation::STATUS_CHANGED)
             ->select('group')
             ->get()
@@ -79,16 +77,7 @@ class Service
             ->pluck('group')
             ->all();
 
-        $notTranslated = [];
-        if(config('translation-manager.highlight_locale_marked'))
-            $notTranslated = Translation::where('value', 'like binary', '%'. strtoupper($locale))
-                ->where('locale', $locale)
-                ->select('group')
-                ->get()
-                ->pluck('group')
-                ->all();
-
-        return array_merge($notPublished, $empty, $notTranslated);
+        return array_merge($notPublished, $empty);
     }
 
     public function getTranslations($group)
@@ -133,31 +122,6 @@ class Service
     	return $this->manager->getConfig($key);
     }
 
-    public function update($name, $value)
-    {
-    	list($locale, $key) = explode('|', $name, 2);
-        $segments = explode('.', $key);
-        $group = $segments[0];
-        unset($segments[0]);
-        $key = implode('.', $segments);
-
-        if(in_array($group, $this->manager->getConfig('exclude_groups')))
-        	return;
-
-        // update translation
-        $translation = Translation::firstOrNew([
-            'locale' => $locale,
-            'group' => $group,
-            'key' => $key,
-        ]);
-        $translation->value = (string) $value ?: null;
-        $translation->status = Translation::STATUS_CHANGED;
-        $translation->save();
-
-        // export translations automatically
-        $this->manager->exportTranslations($group);
-    }
-
     public function add($group, $keys)
     {
 		$keys = explode("\n", $keys);
@@ -199,21 +163,6 @@ class Service
     public function import($replace)
     {
     	return $this->manager->importTranslations($replace);
-    }
-
-    public function find()
-    {
-    	return $this->manager->findTranslations();
-    }
-
-    public function cleanEmpty()
-    {
-    	return $this->manager->cleanTranslations();
-    }
-
-    public function removeAll()
-    {
-    	return $this->manager->truncateTranslations();
     }
 
     public function publish($group)

@@ -26,8 +26,7 @@
         @php $t = isset($translation[$locale]) ? $translation[$locale] : null; @endphp
         <td>
             <a href="#edit" class="editable status-{{ $t ? $t->status : 0 }} 
-                locale-{{ $locale }}
-                {{ $t && substr($t->value, -2) == strtoupper($currentLocale) && config('translation-manager.highlight_locale_marked') ? ' editable-locale-empty' : '' }}" 
+                locale-{{ $locale }}" 
                 data-locale="{{ $locale }}" 
                 data-name="{{ $locale . "|" . $parent_key . $key }}" 
                 id="username" 

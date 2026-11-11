@@ -37,14 +37,6 @@
         	margin-left: 10px;
         }
 
-        .editable-locale-empty, 
-        .editable-locale-empty:hover, 
-        .editable-locale-empty:focus {
-            color: #dd1144;
-            font-style: italic;
-            text-decoration: none;
-        }
-
         .glyphicon.glyphicon-spinner {
 		    -webkit-animation: glyphicon-spin-r 1s infinite linear;
 		    animation: glyphicon-spin-r 1s infinite linear;
@@ -172,45 +164,6 @@
 					},
 					function() {
 						if($('.c-translation-module__file.highlight').length > 0) {
-							window.location.reload();
-						}
-					}
-				);
-			});
-
-			$('.form-clean a').on('click', function(e) {
-				e.preventDefault();
-
-				var $form = $(this).closest('form');
-				var resetOption = $(this).data('option');
-				handleRequest(
-					$form, 
-					$form.find('button'), 
-					{		
-						reset: resetOption
-					},
-					function() {
-						if(resetOption == 1) {
-							if($('.c-translation-module__back').length > 0) {
-								window.location.href = $('.c-translation-module__back').attr('href');
-							} else {
-								window.location.reload();
-							}
-						}
-					}
-				);
-			});
-
-			$('.form-search button').on('click', function(e) {
-				e.preventDefault();
-
-				var $btn = $(this);
-				handleRequest(
-					$btn.closest('form'), 
-					$btn, 
-					{},
-					function() {
-						if($('.c-translation-module__file.active').length > 0) {
 							window.location.reload();
 						}
 					}
