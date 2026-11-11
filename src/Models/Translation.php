@@ -2,28 +2,57 @@
 
 namespace HighSolutions\TranslationManager\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use DB;
 
 /**
- * Translation model
+ * One text: a key of a lang file in one language.
  *
  * @property integer $id
- * @property integer $status
+ * @property string  $app
  * @property string  $locale
  * @property string  $group
  * @property string  $key
- * @property string  $value
+ * @property string|null  $value
+ * @property string|null  $base_value
+ * @property string  $status
+ * @property boolean $ai
+ * @property integer|null $changed_by
+ * @property string|null  $changed_by_name
+ * @property \Carbon\Carbon|null $changed_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
 class Translation extends Model{
 
-    const STATUS_SAVED = 0;
-    const STATUS_CHANGED = 1;
+    /** Same as the lang file and version control. */
+    const STATUS_SAVED = 'saved';
+    /** Written to the lang file, not committed yet. */
+    const STATUS_PUBLISHED = 'published';
+    /** The lang file holds a third text; a person decides. */
+    const STATUS_CONFLICT = 'conflict';
 
-    protected $table = 'ltm_translations';
+    protected $table = 'tm_translations';
     protected $guarded = ['id', 'created_at', 'updated_at'];
+    protected $casts = ['ai' => 'boolean', 'changed_at' => 'datetime'];
+    protected $attributes = ['status' => self::STATUS_SAVED, 'ai' => false];
+
+    public function getConnectionName()
+    {
+        return config('translation-manager.connection');
+    }
+
+    protected static function booted()
+    {
+        // Applications can share the table; each one sees only its own rows.
+        static::addGlobalScope('app', function (Builder $query) {
+            $query->where($query->getModel()->getTable() . '.app', config('translation-manager.app'));
+        });
+
+        static::creating(function (Model $model) {
+            $model->app = config('translation-manager.app');
+        });
+    }
 
     public function scopeOfTranslatedGroup($query, $group)
     {
@@ -37,22 +66,6 @@ class Translation extends Model{
         }
 
         return $query;
-    }
-
-    public function scopeSelectDistinctGroup($query)
-    {
-        $select = '';
-
-        switch (DB::getDriverName()) {
-            case 'mysql':
-                $select = 'DISTINCT `group`';
-                break;
-            default:
-                $select = 'DISTINCT "group"';
-                break;
-        }
-
-        return $query->select(DB::raw($select));
     }
 
 }

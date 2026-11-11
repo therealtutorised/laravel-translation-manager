@@ -19,7 +19,7 @@ class ResetCommand extends Command {
      *
      * @var string
      */
-    protected $description = 'Delete all translations from the database';
+    protected $description = 'Delete this application\'s rows. Texts that are not committed yet lose that mark';
 
     /** @var \HighSolutions\TranslationManager\Manager  */
     protected $manager;

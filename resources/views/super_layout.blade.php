@@ -7,8 +7,12 @@
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 	<link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet"/>
 	<style>
-		a.status-1 {
+		a.status-published, a.status-conflict {
 			font-weight: bold;
+		}
+
+		a.status-conflict {
+			color: #a94442;
 		}
 
 		.editable-click {
@@ -93,11 +97,15 @@
 			    }
 			});
 
-			$('.editable').editable().on('hidden', function(e, reason) {
-				var locale = $(this).data('locale');
-				if(reason === 'save'){
-					$(this).removeClass('status-0').addClass('status-1');
+			$('.editable').editable({
+				success: function(response) {
+					if(!response.success)
+						return $('<div>').text(response.msg).html();
+
+					$(this).removeClass('status-saved status-published status-conflict').addClass('status-' + response.status);
 				}
+			}).on('hidden', function(e, reason) {
+				var locale = $(this).data('locale');
 				if(reason === 'save' || reason === 'nochange') {
 					var $next = $(this).closest('tr').next().find('.editable.locale-' + locale);
 					setTimeout(function() {
@@ -141,47 +149,11 @@
 				handleRequest(
 					$form, 
 					$form.find('button'), 
-					{		
-						replace: $(this).data('option')
-					},
+					{},
 					function() {
 						if($('.c-translation-module__file').length == 0) {
 							window.location.reload();
 						}
-					}
-				);
-			});
-
-			$('.form-export button').on('click', function(e) {
-				e.preventDefault();
-
-				var $btn = $(this);
-				handleRequest(
-					$btn.closest('form'), 
-					$btn, 
-					{		
-						replace: $(this).data('option')
-					},
-					function() {
-						if($('.c-translation-module__file.highlight').length > 0) {
-							window.location.reload();
-						}
-					}
-				);
-			});
-
-			$('.form-publish button').on('click', function(e) {
-				e.preventDefault();
-
-				var $btn = $(this);
-				handleRequest(
-					$btn.closest('form'), 
-					$btn, 
-					{},
-					function() {
-						$('.table .editable.status-1')
-							.removeClass('status-1')
-							.addClass('status-0');
 					}
 				);
 			});

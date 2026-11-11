@@ -25,7 +25,7 @@
     @foreach($locales as $locale)
         @php $t = isset($translation[$locale]) ? $translation[$locale] : null; @endphp
         <td>
-            <a href="#edit" class="editable status-{{ $t ? $t->status : 0 }} 
+            <a href="#edit" class="editable status-{{ $t ? $t->status : 'saved' }} 
                 locale-{{ $locale }}" 
                 data-locale="{{ $locale }}" 
                 data-name="{{ $locale . "|" . $parent_key . $key }}" 

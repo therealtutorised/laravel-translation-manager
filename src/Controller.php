@@ -2,6 +2,7 @@
 
 namespace HighSolutions\TranslationManager;
 
+use HighSolutions\TranslationManager\Files\LangFileException;
 use HighSolutions\TranslationManager\Service;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -47,7 +48,11 @@ class Controller extends BaseController
     {
         $group = $this->service->getGroup('translations/add/');
 
-        $this->service->add($group, $request->input('keys'));
+        try {
+            $this->service->add($group, (string) $request->input('keys'));
+        } catch (LangFileException $e) {
+            return redirect()->back()->withErrors($e->getMessage());
+        }
 
         return redirect()->back();
     }
@@ -62,10 +67,18 @@ class Controller extends BaseController
                 'msg' => 'File is excluded',
             ];
 
-        $this->service->edit($group, $request->input('name'), $request->input('value'));
+        try {
+            $status = $this->service->edit($group, (string) $request->input('name'), $request->input('value'));
+        } catch (LangFileException $e) {
+            return [
+                'success' => false,
+                'msg' => $e->getMessage(),
+            ];
+        }
 
         return [
             'success' => true,
+            'status' => $status,
         ];
     }
 
@@ -89,22 +102,11 @@ class Controller extends BaseController
 
     public function postImport(Request $request)
     {
-        $this->service->import($request->input('replace'));
+        $this->service->import();
 
         return [
             'success' => true,
         ];
     }
 
-    public function postPublish()
-    {
-        $group = $this->service->getGroup('translations/publish/');
-
-        $this->service->publish($group);
-
-        return [
-            'success' => true,
-        ];
-    }
-    
 }

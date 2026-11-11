@@ -21,7 +21,8 @@
         "illuminate/routing": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "illuminate/translation": "^12.0|^13.0",
-        "illuminate/view": "^12.0|^13.0"
+        "illuminate/view": "^12.0|^13.0",
+        "nikic/php-parser": "^5.0"
     },
     "require-dev": {
         "orchestra/testbench": "^10.0|^11.0",

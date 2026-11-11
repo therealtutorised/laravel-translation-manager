@@ -115,35 +115,59 @@ The package is not on Packagist. Add this repository and the package to your Lar
 
 Run `composer update tutorised/laravel-translation-manager` to install the package. It needs PHP 8.3 and Laravel 12 or 13. The service provider is registered automatically.
 
-Next, publish all package resources:
+Switch the tool on in the `.env` of the server where texts are edited, and run the migrations there:
 
 ```bash
-    php artisan vendor:publish --provider="HighSolutions\TranslationManager\ManagerServiceProvider"
+    TRANSLATION_MANAGER_ENABLED=true
 ```
-
-This will add to your project:
-
-    - migration - database table for storing translations
-    - configuration - package configurations
-    - views - configurable views for translation management
-    - translations - translations for webinterface
-
-Remember to launch migration: 
 
 ```bash
     php artisan migrate
 ```
 
+Where the tool is off (the default), its pages don't exist, its tables are not created and lang files are not checked or written. The package brings its own migrations; they are not published.
+
+To change the configuration, views or the page's own texts, publish them:
+
+```bash
+    php artisan vendor:publish --provider="HighSolutions\TranslationManager\ManagerServiceProvider"
+```
+
 Workflow
 ------------
 
-This package doesn't replace the Translation system, only import/export PHP files to a database and make them editable in browser.
+The lang files stay the truth. The tool keeps a copy of every text in the database and remembers which texts were changed in the browser and are not in version control yet.
 
-The workflow would be:
+    - Import: the first import reads all lang files into the database
+    - Edit a text in the browser: it is written into its lang file at once, and only that line changes. Key order, comments, indents and quote styles of the file stay as they are
+    - Commit the changed lang files from that server to version control
+    - Deploy: a deploy resets the lang files. On the next request the tool writes the texts that are not committed yet back into them
 
-    - Import translations: Read all translation files and save them in the database
-    - Translate all keys through the webinterface
-    - Export: Write all translations back to the translation files.
+There is no Publish or Export step.
+
+### Statuses
+
+| Status      | Meaning                                                                                   |
+|-------------|-------------------------------------------------------------------------------------------|
+| `saved`     | The same as the lang file and version control                                             |
+| `published` | Written to the lang file on this server, waiting for a commit                             |
+| `conflict`  | The lang file holds a third text, usually a developer's change. Nothing is overwritten until a person decides |
+
+### What happens after a deploy
+
+Before every request the tool compares each lang file's modification time, size and inode with what it saw last. For a changed file it compares every key with its row:
+
+| Row         | Text in the file                           | Result                                                    |
+|-------------|--------------------------------------------|-----------------------------------------------------------|
+| none        | any                                        | Stored as `saved`                                         |
+| `saved`     | another text, or the key is gone           | The file wins: the row takes the text or is deleted       |
+| `published` | the row's text                             | `saved`: version control now holds it                     |
+| `published` | the text from before the edit              | The row's text is written back into the file              |
+| `published` | an older text that the tool wrote          | That version was committed; the row's text is written back |
+| `published` | anything else                              | `conflict`                                                |
+| `conflict`  | the row's text, or the text from before the edit | Handled like `published` again                      |
+
+Every change is recorded in the `tm_changes` table: who, when, the old and the new text.
 
 Usage
 ------
@@ -153,46 +177,36 @@ You can access package in `http://yourdomain.com/translations` in default config
 Configuration
 -------------
 
-| Setting name             | Description                                                             | Default value                                                                                                        |
-|--------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| route                    | Route declaration (prefix, namespace, middlewares etc.)                 | [,'prefix' => 'translations', 'namespace' => 'HighSolutions\TranslationManager', 'middleware' => [,'web', 'auth',],] |
-| delete_enabled           | Enable deletion of translations                                         | true                                                                                                                 |
-| exclude_groups           | Exclude specific file groups (like validation, pagination, routes etc.) | []                                                                                                                   |
-| exclude_langs            | Exclude specific langs and directories (like vendor and en, etc.) | []                                                                                                                   |
-| sort_keys                | Export translations with keys output alphabetically.                    | false                                                                                                                |
-| permissions              | Define whow and when can edit translations.                             |  env('APP_ENV') == 'local'                                                                   |
+| Setting name        | Description                                                                 | Default value                                  |
+|---------------------|-----------------------------------------------------------------------------|------------------------------------------------|
+| enabled             | Switch the tool on                                                          | env('TRANSLATION_MANAGER_ENABLED', false)      |
+| connection          | Database connection for the tool's tables                                   | env('TRANSLATION_MANAGER_CONNECTION'), the default connection |
+| app                 | Name of the application, stored on every row. Applications that share the tables see only their own rows | env('TRANSLATION_MANAGER_APP', 'app') |
+| source_locale       | The language texts are written in first. New keys in other languages are placed as in this language's file | env('TRANSLATION_MANAGER_SOURCE_LOCALE'), the application's locale |
+| storage_path        | Folder for the tool's own files. It must survive deploys                    | storage_path('app/translation-manager')        |
+| user_name_attribute | Attribute of the signed-in user that the change log stores as the name      | 'name'                                         |
+| route               | Route declaration (prefix, namespace, middlewares etc.)                     | ['prefix' => 'translations', 'namespace' => 'HighSolutions\TranslationManager', 'middleware' => ['web', 'auth']] |
+| delete_enabled      | Enable deletion of keys in the grid. It removes the tool's rows only; the lang files keep the key | false                    |
+| exclude_groups      | Exclude specific file groups (like validation, pagination, routes etc.)     | []                                             |
+| exclude_langs       | Exclude specific langs and directories (like vendor and en, etc.)           | ['vendor']                                     |
+| permissions         | Define who and when can edit translations.                                  | env('APP_ENV') == 'local'                      |
 
+The web server's user needs write access to the lang files and their folders.
 
 Commands
 ---------
 
 ### Import command
 
-The import command will search through app/lang and load all strings in the database, so you can easily manage them.
+The import command checks every lang file against the database with the rules above. Run it once after installing; after that the check before each request keeps the database current.
 
 ```bash
     php artisan translations:import
 ```
 
-Note: By default, only new strings are added. Translations already in the DB are kept the same. If you want to replace all values with the ones from the files, 
-add the `--replace` (or `-R`) option: `php artisan translations:import --replace`
-
-### Export command
-
-The export command will write the contents of the database back to resources/lang php files.
-This will overwrite existing translations and remove all comments, so make sure to backup your data before using.
-Supply the group name to define which groups you want to publish.
-If you want to export all groups, provide `*` as name of group.
-
-```bash
-    php artisan translations:export <group>
-```
-
-For example, `php artisan translations:export reminders` when you have 2 locales (en/pl), will write to `resources/lang/en/reminders.php` and `resources/lang/pl/reminders.php`
-
 ### Clean command
 
-The clean command will search for all translation that are NULL and delete them, so your interface is a bit cleaner. Note: empty translations are never exported.
+The clean command deletes keys that were added in the browser and never got a text.
 
 ```bash
     php artisan translations:clean
@@ -200,7 +214,7 @@ The clean command will search for all translation that are NULL and delete them,
 
 ### Reset command
 
-The reset command simply clears all translation in the database, so you can start fresh (by a new import). Make sure to export your work if needed before doing this.
+The reset command deletes this application's rows, so you can start fresh with a new import. Commit the lang files first: after a reset the tool no longer knows which texts were waiting for a commit, and the next deploy would not restore them.
 
 ```bash
     php artisan translations:reset
@@ -218,6 +232,13 @@ Changelog
 * Removed routes: `/clean`, `/find`, `/custom-update`
 * `symfony/finder` is no longer required
 * Test setup with Orchestra Testbench
+* New tables `tm_translations`, `tm_changes` and `tm_grants`; `ltm_translations` is no longer used
+* A save writes the text into its lang file at once and changes only that line (`nikic/php-parser`)
+* Import follows fixed rules instead of the `--replace` option, and runs in batches
+* Texts that are not committed yet are written back after a deploy, before the next request
+* Change log of every edit
+* New settings: `enabled`, `connection`, `app`, `source_locale`, `storage_path`, `user_name_attribute`; `delete_enabled` is now off by default
+* Removed: Publish and Export (the buttons, the `/publish` route, the `translations:export` command) and the `sort_keys` setting
 
 1.5.0
 * Support Laravel 13.x

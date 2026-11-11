@@ -65,19 +65,11 @@ class Service
 
     public function getHighlighted() 
     {
-        $notPublished = Translation::where('status', Translation::STATUS_CHANGED)
-            ->select('group')
-            ->get()
+        // Files with texts that wait for a commit, a decision or a first text.
+        return Translation::where('status', '!=', Translation::STATUS_SAVED)
+            ->distinct()
             ->pluck('group')
             ->all();
-
-        $empty = Translation::whereNull('value')
-            ->select('group')
-            ->get()
-            ->pluck('group')
-            ->all();
-
-        return array_merge($notPublished, $empty);
     }
 
     public function getTranslations($group)
@@ -134,17 +126,16 @@ class Service
         }
     }
 
+    /**
+     * Save one text and write it into its lang file. Returns the row's status.
+     *
+     * @throws \HighSolutions\TranslationManager\Files\LangFileException
+     */
     public function edit($group, $name, $value)
     {
 		list($locale, $key) = explode('|', $name, 2);
-        $translation = Translation::firstOrNew([
-            'locale' => $locale,
-            'group' => $group,
-            'key' => $key,
-        ]);
-        $translation->value = (string) $value ?: null;
-        $translation->status = Translation::STATUS_CHANGED;
-        $translation->save();
+
+        return app(Saver::class)->save($locale, $group, $key, (string) $value);
     }
 
     public function getDeleteParams($groups)
@@ -160,14 +151,9 @@ class Service
         Translation::where('group', $group)->where('key', $key)->delete();
     }
 
-    public function import($replace)
+    public function import()
     {
-    	return $this->manager->importTranslations($replace);
-    }
-
-    public function publish($group)
-    {
-    	return $this->manager->exportTranslations($group);
+    	return $this->manager->importTranslations();
     }
 
     public function canManage() 

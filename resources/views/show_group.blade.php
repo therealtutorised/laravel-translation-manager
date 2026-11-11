@@ -34,11 +34,7 @@
 </div>
 
 <div class="text-center margin-bottom-30">
-    <form class="form-publish" method="POST" action="{{ route('translation-manager.publish', $group) }}" role="form">
-        {{ csrf_field() }}
-        <a href="{{ route('translation-manager.index') }}" class="c-translation-module__back btn btn-default margin-right-10" title="{{ trans('translation-manager::panel.actions.back') }}">
-            <i class="glyphicon glyphicon-arrow-left"></i>
-        </a>
-        <button type="submit" class="btn btn-primary" title="{{ trans('translation-manager::panel.actions.publish') }}"><i class="glyphicon glyphicon-floppy-disk"></i></button>
-    </form>
+    <a href="{{ route('translation-manager.index') }}" class="c-translation-module__back btn btn-default margin-right-10" title="{{ trans('translation-manager::panel.actions.back') }}">
+        <i class="glyphicon glyphicon-arrow-left"></i>
+    </a>
 </div>

@@ -3,9 +3,14 @@
 namespace HighSolutions\TranslationManager;
 
 use HighSolutions\TranslationManager\Console\CleanCommand;
-use HighSolutions\TranslationManager\Console\ExportCommand;
 use HighSolutions\TranslationManager\Console\ImportCommand;
 use HighSolutions\TranslationManager\Console\ResetCommand;
+use HighSolutions\TranslationManager\Files\LangFiles;
+use HighSolutions\TranslationManager\Files\LangWriter;
+use HighSolutions\TranslationManager\Files\Signatures;
+use HighSolutions\TranslationManager\Files\WriteLock;
+use HighSolutions\TranslationManager\Http\RestoreTranslations;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
@@ -52,7 +57,6 @@ class ManagerServiceProvider extends ServiceProvider {
         return [
             'reset' => ResetCommand::class,
             'import' => ImportCommand::class,
-            'export' => ExportCommand::class,
             'clean' => CleanCommand::class,
         ];
     }
@@ -71,6 +75,30 @@ class ManagerServiceProvider extends ServiceProvider {
         $this->app->singleton('translation-manager', function($app) {
             return $app->make(Manager::class);
         });
+
+        $this->app->singleton(Signatures::class, function($app) {
+            return new Signatures($app['config']['translation-manager.storage_path']);
+        });
+
+        $this->app->singleton(WriteLock::class, function($app) {
+            return new WriteLock($app['config']['translation-manager.storage_path']);
+        });
+
+        $this->app->singleton(LangFiles::class, function($app) {
+            $config = $app['config']['translation-manager'];
+
+            return new LangFiles(
+                $app->langPath(),
+                new LangWriter,
+                $app->make(Signatures::class),
+                $config['exclude_langs'] ?? [],
+                $config['exclude_groups'] ?? [],
+                $config['source_locale'] ?: $app['config']['app.locale'],
+            );
+        });
+
+        $this->app->singleton(Importer::class);
+        $this->app->singleton(Saver::class);
     }
 
     /**
@@ -85,7 +113,18 @@ class ManagerServiceProvider extends ServiceProvider {
         $this->loadMigrations();
         $this->loadTranslations();
         $this->loadRoutes($router);
+        $this->loadRestore();
 	}
+
+    /**
+     * Check the lang files before every request, only where the tool is switched on.
+     */
+    protected function loadRestore()
+    {
+        if ($this->app['config']->get('translation-manager.enabled')) {
+            $this->app->make(Kernel::class)->pushMiddleware(RestoreTranslations::class);
+        }
+    }
 
     protected function loadViews()
     {
@@ -98,10 +137,10 @@ class ManagerServiceProvider extends ServiceProvider {
 
     protected function loadMigrations()
     {
-        $migrationPath = __DIR__.'/../database/migrations';
-        $this->publishes([
-            $migrationPath => base_path('database/migrations'),
-        ], 'migrations');
+        // Where the tool is off, its tables are never created.
+        if ($this->app['config']->get('translation-manager.enabled')) {
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        }
     }
 
     protected function loadTranslations()
@@ -115,6 +154,11 @@ class ManagerServiceProvider extends ServiceProvider {
     }
 
     public function loadRoutes($router) {        
+        // Where the tool is off, its pages don't exist.
+        if (!$this->app['config']->get('translation-manager.enabled')) {
+            return;
+        }
+
         $config = $this->routeConfig();
 
         $router->group($config, function($router) {
@@ -123,7 +167,6 @@ class ManagerServiceProvider extends ServiceProvider {
             $router->post('/add/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postAdd')->name('translation-manager.add');
             $router->post('/edit/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postEdit')->name('translation-manager.edit');
             $router->post('/delete/{key}/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postDelete')->name('translation-manager.delete');
-            $router->post('/publish/{group}/{group2?}/{group3?}/{group4?}/{group5?}', 'Controller@postPublish')->name('translation-manager.publish');
             $router->post('/import', 'Controller@postImport')->name('translation-manager.import');
         });
     }
@@ -143,7 +186,6 @@ class ManagerServiceProvider extends ServiceProvider {
             'translation-manager',
             'command.translation-manager.reset',
             'command.translation-manager.import',
-            'command.translation-manager.export',
             'command.translation-manager.clean',
         ];
 	}

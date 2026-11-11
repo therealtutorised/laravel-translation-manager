@@ -4,7 +4,6 @@ namespace HighSolutions\TranslationManager\Console;
 
 use HighSolutions\TranslationManager\Manager;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
 
 class ImportCommand extends Command 
 {
@@ -21,7 +20,7 @@ class ImportCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Import translations from the PHP sources';
+    protected $description = 'Check every lang file and bring the rows in line with them';
 
     /** @var  \HighSolutions\TranslationManager\Manager  */
     protected $manager;
@@ -39,22 +38,9 @@ class ImportCommand extends Command
      */
     public function handle()
     {
-        $replace = $this->option('replace');
-        $counter = $this->manager->importTranslations($replace);
+        $counter = $this->manager->importTranslations();
         $this->info('Done importing, processed '.$counter. ' items!');
 
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return array(
-            array('replace', "R", InputOption::VALUE_NONE, 'Replace existing keys'),
-        );
     }
 
 }

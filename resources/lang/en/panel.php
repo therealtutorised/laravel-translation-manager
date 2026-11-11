@@ -3,13 +3,9 @@
 return array(
 	'actions' => array(
 		'add' => 'Add new keys to file',
-		'append' => 'Add only new translations',
 		'back' => 'Go back to main site',
 		'delete' => 'Delete this translation',
-		'export' => 'Export all changes to files',
-		'import' => 'Import all files to database',
-		'publish' => 'Publish this file',
-		'replace' => 'Replace all translations',
+		'import' => 'Check all files for changes',
 	),
 	'group' => array(
 		'add-lines' => 'Write new keys for file, one in line',
